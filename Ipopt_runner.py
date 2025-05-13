@@ -156,9 +156,6 @@ def runner():
     model.py.display()
     model.pz.display()
     model.pq.display()
- 
-
-
 
     # Define Equations
     def eq_6_1(model, j):
