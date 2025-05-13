@@ -156,7 +156,7 @@ def runner():
     model.py.display()
     model.pz.display()
     model.pq.display()
-    model.F.display
+ 
 
 
 
@@ -165,9 +165,9 @@ def runner():
         return model.Y[j] == model.b[j] * prod(model.F[h,j]**model.beta[h,j] for h in model.h)
     model.eq_6_1 = Constraint(model.ind, rule=eq_6_1)
 
-    # def eq_6_2(model, h, j):
-    #     return model.F[h,j] == model.beta[h,j] * model.Y[j] * model.py[j] / model.pf[h]
-    # model.eq_6_2 = Constraint(model.h, model.ind, rule=eq_6_2)
+    def eq_6_2(model, h, j):
+        return model.F[h,j] == model.beta[h,j] * model.Y[j] * model.py[j] / model.pf[h]
+    model.eq_6_2 = Constraint(model.h, model.ind, rule=eq_6_2)
 
     def eq_6_3(model, i, j):
         return model.X[i,j] == model.ax[i,j] * model.Z[j]
@@ -217,16 +217,16 @@ def runner():
     model.eq_6_13 = Constraint(model.ind, rule=eq_6_13)
 
     def eq_6_14(model, i):
-        return model.pq[i] == model.epsilon * model.pWe
+        return model.pe[i] == model.epsilon * model.pWe
     model.eq_6_14 = Constraint(model.ind, rule=eq_6_14)
 
     def eq_6_15(model, i):
         return model.pm[i] == model.epsilon * model.pWm
     model.eq_6_15 = Constraint(model.ind, rule=eq_6_15)
     
-    def eq_6_16(model):
-        return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
-    model.eq_6_16 = Constraint(rule=eq_6_16)
+    # def eq_6_16(model):
+    #     return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
+    # model.eq_6_16 = Constraint(rule=eq_6_16)
 
     def eq_6_17(model, i):
         return model.Q[i] == model.gamma[i] * (
