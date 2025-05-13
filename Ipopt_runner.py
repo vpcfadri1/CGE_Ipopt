@@ -125,7 +125,6 @@ def runner():
     model.ssg = Param(initialize=float(p.ssg), within=Reals)
     model.tau_d = Param(initialize=float(p.taud), within=Reals)
     
-    print(float(p.ssg))
     # Add to Pyomo Variables
     model.Y = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Y0.to_dict())    
     model.F = Var(model.h, model.ind, bounds=(0.0001, None),  within=NonNegativeReals, initialize={(h,j): d.F0.loc[h,j] for h in model.h for j in model.ind})
@@ -149,17 +148,26 @@ def runner():
     model.Sp = Var(bounds=(0.0001, None),within=NonNegativeReals, initialize=p.Sp0.loc['INV', 'HOH'])
     model.Sg = Var(bounds=(0.0001, None),within=NonNegativeReals, initialize=p.Sg0.loc['INV', 'GOV'])
     model.Td = Var(bounds=(0.0001, None),within=NonNegativeReals, initialize=d.Td0.loc['GOV', 'HOH'])
-    model.Tz = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Tz0.loc['IDT'].to_dict())
-    model.Tm = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Tm0.loc['TRF'].to_dict())
+    model.Tz = Var(model.ind, bounds=(0.0000, None), within=NonNegativeReals, initialize=d.Tz0.loc['IDT'].to_dict())
+    model.Tm = Var(model.ind, bounds=(0.0000, None), within=NonNegativeReals, initialize=d.Tm0.loc['TRF'].to_dict())
+    # Display paramaters
+    model.Q.display()
+    model.pf.display()
+    model.py.display()
+    model.pz.display()
+    model.pq.display()
+    model.F.display
+
+
 
     # Define Equations
     def eq_6_1(model, j):
         return model.Y[j] == model.b[j] * prod(model.F[h,j]**model.beta[h,j] for h in model.h)
     model.eq_6_1 = Constraint(model.ind, rule=eq_6_1)
 
-    def eq_6_2(model, h, j):
-        return model.F[h,j] == model.beta[h,j] * model.Y[j]
-    model.eq_6_2 = Constraint(model.h, model.ind, rule=eq_6_2)
+    # def eq_6_2(model, h, j):
+    #     return model.F[h,j] == model.beta[h,j] * model.Y[j] * model.py[j] / model.pf[h]
+    # model.eq_6_2 = Constraint(model.h, model.ind, rule=eq_6_2)
 
     def eq_6_3(model, i, j):
         return model.X[i,j] == model.ax[i,j] * model.Z[j]
@@ -216,9 +224,9 @@ def runner():
         return model.pm[i] == model.epsilon * model.pWm
     model.eq_6_15 = Constraint(model.ind, rule=eq_6_15)
     
-    # def eq_6_16(model):
-    #     return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
-    # model.eq_6_16 = Constraint(rule=eq_6_16)
+    def eq_6_16(model):
+        return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
+    model.eq_6_16 = Constraint(rule=eq_6_16)
 
     def eq_6_17(model, i):
         return model.Q[i] == model.gamma[i] * (
@@ -245,7 +253,7 @@ def runner():
     def eq_6_21(model, i):
         return model.E[i] == (
             (model.theta[i]**model.phi[i] * model.xie[i] * (1 + model.tauz[i]) * model.pz[i]) /
-            model.pq[i])**(1/(1 - model.phi[i])) * model.Z[i]
+            model.pe[i])**(1/(1 - model.phi[i])) * model.Z[i]
     model.eq_6_21 = Constraint(model.ind, rule=eq_6_21)
 
     def eq_6_22(model, i):
@@ -262,14 +270,22 @@ def runner():
         return sum(model.F[h,j] for j in model.ind) == model.FF[h]
     model.eq_6_24 = Constraint(model.h, rule=eq_6_24)
     
+    def objective_rule(model):
+        return prod(model.Xp[i] ** model.alpha[i] for i in model.ind)
+    model.UU = Objective(rule=objective_rule, sense=maximize)
+    
     # Fix numeraire
     model.epsilon.fix(1)
-
+    
     solver = SolverFactory('ipopt')
     results = solver.solve(model, tee=True)
 
     # Display results
-    model.Y.display()
-    model.pf.display()
     model.Q.display()
+    model.pf.display()
+    model.py.display()
+    model.pz.display()
+    model.pq.display()
+    
+    # Error     
 runner()
