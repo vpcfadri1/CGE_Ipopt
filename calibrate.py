@@ -118,7 +118,7 @@ class parameters(object):
             CGE model.
     """
 
-    def __init__(self, d, ind, sam):
+    def __init__(self, d, ind, sam, shocks=None):
         # foreign saving Y
         self.Sf0 = DataFrame(sam, index=["INV"], columns=["EXT"])
         # private saving Y
@@ -144,6 +144,13 @@ class parameters(object):
         temp = d.F0**self.beta
         # scale parameter in production function Y
         self.b = d.Y0 / temp.prod(axis=0)
+
+        # Shock parameters
+        # if shocks:
+        #     for j, shock in shocks.items():
+        #         if j in self.b:
+        #             print(f"Applying shock to {j}: {shock}")
+        #             self.b[j] *= (1 + shock)
 
         # intermediate input requirement coefficient Y
         self.ax = d.X0 / d.Z0

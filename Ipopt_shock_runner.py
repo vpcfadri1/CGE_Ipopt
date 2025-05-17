@@ -81,7 +81,7 @@ def row_col_equal():
     col_sum = sam_small.sum(axis=1)
     np.testing.assert_allclose(row_sum, col_sum)
 
-def runner():
+def runner(shock_dict=None, initial_guess=None):
     # Create model
     model = ConcreteModel()
 
@@ -90,29 +90,12 @@ def runner():
                            'INF', 'FIN', 'REA', 'PBS', 'PAD', 'EDU', 'HHS', 'OTH'])
     model.h = Set(initialize=['CAP', 'LAB'])
 
-    sector_shocks = {
-        'AGR': -0.1,
-        'MIN': -0.2,
-        'MAN': -0.3,
-        'ESW': -0.1,
-        'CON': -0.2,
-        'WRT': -0.3,
-        'TRS': -0.1,
-        'AFS': -0.2,
-        'INF': -0.3,
-        'FIN': -0.1,
-        'REA': -0.2,
-        'PBS': -0.3,
-        'PAD': -0.1,
-        'EDU': -0.2,
-        'HHS': -0.3,
-        'OTH': -0.1,
-    }
     # Define Parameters
     d = calibrate.model_data(sam, h, ind)
-    p = calibrate.parameters(d, ind, sam, shocks=sector_shocks) 
+    p = calibrate.parameters(d, ind, sam) 
 
-    for j, shock in sector_shocks.items():
+    shock_dict = shock_dict or {}
+    for j, shock in shock_dict.items():
         if j in p.b:
             p.b[j] *= (1 + shock)
 
@@ -148,20 +131,22 @@ def runner():
     model.tau_d = Param(initialize=float(p.taud), within=Reals)
     
     # Add to Pyomo Variables
-    model.Y = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Y0.to_dict())    
+    # model.Y = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Y0.to_dict())  
     model.F = Var(model.h, model.ind, bounds=(0.0001, None),  within=NonNegativeReals, initialize={(h,j): d.F0.loc[h,j] for h in model.h for j in model.ind})
     model.X = Var(model.ind, model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize={(i,j): d.X0.loc[i,j] for i in model.ind for j in model.ind})
-    model.Z = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Z0.to_dict())
-    model.Xp = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Xp0['HOH'].to_dict())
-    model.Xg = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Xg0['GOV'].to_dict())
-    model.Xv = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Xv0['INV'].to_dict())
-    model.E = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.E0.to_dict())
-    model.M = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.M0.to_dict())
-    model.Q = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Q0.to_dict())
-    model.D = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.D0.to_dict())
-    model.pf = Var(model.h, bounds=(0.0001, None), within=NonNegativeReals, initialize=1)
+    #model.Z = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Z0.to_dict())
+    #model.Xp = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Xp0['HOH'].to_dict())
+    #model.Xg = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Xg0['GOV'].to_dict())
+    #model.Xv = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Xv0['INV'].to_dict())
+
+    #model.E = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.E0.to_dict())
+    #model.M = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.M0.to_dict())
+    #model.Q = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Q0.to_dict())
+    
+    #model.D = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.D0.to_dict())
+    #model.pf = Var(model.h, bounds=(0.0001, None), within=NonNegativeReals, initialize=1)
     model.py = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=1)
-    model.pz = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=1)
+    #model.pz = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=1)
     model.pq = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=1)
     model.pe = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=1)
     model.pm = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=1)
@@ -172,13 +157,51 @@ def runner():
     model.Td = Var(bounds=(0.0001, None),within=NonNegativeReals, initialize=d.Td0.loc['GOV', 'HOH'])
     model.Tz = Var(model.ind, bounds=(0.0000, None), within=NonNegativeReals, initialize=d.Tz0.loc['IDT'].to_dict())
     model.Tm = Var(model.ind, bounds=(0.0000, None), within=NonNegativeReals, initialize=d.Tm0.loc['TRF'].to_dict())
+    
+    def safe_init(name, keys, fallback):
+        if initial_guess and name in initial_guess:
+            return {k: max(initial_guess[name].get(k, fallback.get(k, eps)), eps) for k in keys}
+        return {k: max(fallback.get(k, eps), eps) for k in keys}
+    eps = 1e-5
+    model.Y = Var(model.ind, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('Y', model.ind, d.Y0))
+
+    model.Z = Var(model.ind, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('Z', model.ind, d.Z0))
+
+    model.Q = Var(model.ind, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('Q', model.ind, d.Q0))
+
+    model.Xp = Var(model.ind, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('Xp', model.ind, d.Xp0['HOH']))
+
+    model.Xg = Var(model.ind, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('Xg', model.ind, d.Xg0['GOV']))
+
+    model.Xv = Var(model.ind, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('Xv', model.ind, d.Xv0['INV']))
+
+    model.E = Var(model.ind, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('E', model.ind, d.E0))
+
+    model.M = Var(model.ind, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('M', model.ind, d.M0))
+
+    model.D = Var(model.ind, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('D', model.ind, d.D0))
+
+    model.pf = Var(model.h, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('pf', model.h, {h_: 1 for h_ in model.h}))
+
+    model.pz = Var(model.ind, bounds=(eps, None), within=NonNegativeReals,
+                initialize=safe_init('pz', model.ind, {j: 1 for j in model.ind}))
     # Display paramaters
     model.Q.display()
     model.pf.display()
     model.py.display()
     model.pz.display()
     model.pq.display()
-    model.F.display
+    model.F.display()
 
     # Define Equations
 
@@ -187,9 +210,9 @@ def runner():
         return model.Y[j] == model.b[j] * prod(model.F[h,j]**model.beta[h,j] for h in model.h)
     model.eq_6_1 = Constraint(model.ind, rule=eq_6_1)
 
-    # def eq_6_2(model, h, j):
-    #     return model.F[h,j] == model.beta[h,j] * model.Y[j] * model.py[j] / model.pf[h]
-    # model.eq_6_2 = Constraint(model.h, model.ind, rule=eq_6_2)
+    def eq_6_2(model, h, j):
+        return model.F[h,j] == model.beta[h,j] * model.Y[j] * model.py[j] / model.pf[h]
+    model.eq_6_2 = Constraint(model.h, model.ind, rule=eq_6_2)
 
     def eq_6_3(model, i, j):
         return model.X[i,j] == model.ax[i,j] * model.Z[j]
@@ -250,9 +273,9 @@ def runner():
         return model.pm[i] == model.epsilon * model.pWm
     model.eq_6_15 = Constraint(model.ind, rule=eq_6_15)
     
-    def eq_6_16(model):
-        return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
-    model.eq_6_16 = Constraint(rule=eq_6_16)
+    # def eq_6_16(model):
+    #     return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
+    # model.eq_6_16 = Constraint(rule=eq_6_16)
 
     # Substitution between imports and domestic goods:
     # (Armington Composite)
@@ -307,9 +330,20 @@ def runner():
     # Fix numeraire
     model.epsilon.fix(1)
     
+    # Solver
     solver = SolverFactory('ipopt')
-    results = solver.solve(model, tee=True)
+   
+    # Set IPOPT options
+    # solver.options['max_iter'] = 5000           # maximum number of iterations (default was 3000)
+    # solver.options['tol'] = 1e-6                # relative tolerance (default was 1e-8)
+    # solver.options['constr_viol_tol'] = 1e-6    # constraint violation tolerance (default was 1e-8)
+    # solver.options['acceptable_tol'] = 1e-4     # acceptable solution tolerance
+    # solver.options['print_level'] = 5
+    # solver.options['output_file'] = "ipopt_log.txt"
 
+
+    results = solver.solve(model, tee=True)
+    
     # Display results
     model.Q.display()
     model.pf.display()
@@ -317,5 +351,29 @@ def runner():
     model.pz.display()
     model.pq.display()
     
-    # Error     
-runner()
+    result_dict = {
+    'Y': {j: value(model.Y[j]) for j in model.ind},
+    'Q': {j: value(model.Q[j]) for j in model.ind},
+    'pf': {h_: value(model.pf[h_]) for h_ in model.h},
+    'pz': {j: value(model.pz[j]) for j in model.ind},
+    'Z': {j: value(model.Z[j]) for j in model.ind},
+    'Xp': {j: value(model.Xp[j]) for j in model.ind},
+    'Xg': {j: value(model.Xg[j]) for j in model.ind},
+    'Xv': {j: value(model.Xv[j]) for j in model.ind},
+    'E': {j: value(model.E[j]) for j in model.ind},
+    'M': {j: value(model.M[j]) for j in model.ind},
+    'D': {j: value(model.D[j]) for j in model.ind}
+}
+
+    return result_dict
+
+shock_sequence = [
+    {'MIN': -0.01},
+    {'AGR': -0.01},
+    {'MAN': -0.01}
+]
+
+initial_guess = None
+for step, shock in enumerate(shock_sequence):
+    print(f"\n=== Step {step+1}: Applying {shock} ===")
+    initial_guess = runner(shock_dict=shock, initial_guess=initial_guess)
