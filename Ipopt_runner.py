@@ -158,9 +158,9 @@ def runner():
     model.pq.display()
     model.F.display
 
-
-
     # Define Equations
+
+    # Domestic Production:
     def eq_6_1(model, j):
         return model.Y[j] == model.b[j] * prod(model.F[h,j]**model.beta[h,j] for h in model.h)
     model.eq_6_1 = Constraint(model.ind, rule=eq_6_1)
@@ -180,7 +180,8 @@ def runner():
     def eq_6_5(model, j):
         return model.pz[j] == model.ay[j] * model.py[j] + sum(model.ax[i,j] * model.pq[i] for i in model.ind)
     model.eq_6_5 = Constraint(model.ind, rule=eq_6_5)
-  
+    
+    # Government:
     def eq_6_6(model):
         return model.Td == model.tau_d * sum(model.pf[h] * model.FF[h] for h in model.h)
     model.eq_6_6 = Constraint(rule=eq_6_6)
@@ -198,6 +199,7 @@ def runner():
         model.Td + sum(model.Tz[j] for j in model.ind) + sum(model.Tm[j] for j in model.ind) - model.Sg)
     model.eq_6_9 = Constraint(model.ind, rule=eq_6_9)
 
+    # Investment and Savings:
     def eq_6_10(model, i):
         return model.Xv[i] == (model.lam[i] / model.pq[i]) * (model.Sp + model.Sg + model.epsilon * model.Sf)
     model.eq_6_10 = Constraint(model.ind, rule=eq_6_10)
@@ -211,11 +213,13 @@ def runner():
             model.Td + sum(model.Tz[j] for j in model.ind) + sum(model.Tm[j] for j in model.ind))
     model.eq_6_12 = Constraint(rule=eq_6_12)
 
+    # Household:
     def eq_6_13(model, i):
         return model.Xp[i] == (model.alpha[i] / model.pq[i]) * (
             sum(model.pf[h] * model.FF[h] for h in model.h) - model.Sp - model.Td)
     model.eq_6_13 = Constraint(model.ind, rule=eq_6_13)
 
+    # Export and import prices and the BOP constraint:
     def eq_6_14(model, i):
         return model.pq[i] == model.epsilon * model.pWe
     model.eq_6_14 = Constraint(model.ind, rule=eq_6_14)
@@ -228,6 +232,8 @@ def runner():
         return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
     model.eq_6_16 = Constraint(rule=eq_6_16)
 
+    # Substitution between imports and domestic goods:
+    # (Armington Composite)
     def eq_6_17(model, i):
         return model.Q[i] == model.gamma[i] * (
             model.deltam[i] * model.M[i]**model.eta[i] + model.deltad[i] * model.D[i]**model.eta[i])**(1/model.eta[i])
@@ -245,6 +251,7 @@ def runner():
             model.pd[i])**(1/(1 - model.eta[i])) * model.Q[i]
     model.eq_6_19 = Constraint(model.ind, rule=eq_6_19)
 
+    # Transformation between exports and domestic goods:
     def eq_6_20(model, i):
         return model.Z[i] == model.theta[i] * (
             model.xie[i] * model.E[i]**model.phi[i] + model.xid[i] * model.D[i]**model.phi[i])**(1/model.phi[i])
@@ -262,6 +269,7 @@ def runner():
             model.pd[i])**(1/(1 - model.phi[i])) * model.Z[i]
     model.eq_6_22 = Constraint(model.ind, rule=eq_6_22)
 
+    # Market-clearing conditions:
     def eq_6_23(model, i):
         return model.Q[i] == model.Xp[i] + model.Xg[i] + model.Xv[i] + sum(model.X[i,j] for j in model.ind)
     model.eq_6_23 = Constraint(model.ind, rule=eq_6_23)
