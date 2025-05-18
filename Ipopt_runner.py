@@ -1,12 +1,9 @@
 from pyomo.environ import *
-import scipy.optimize as opt
 import numpy as np
 import pandas as pd
-from pandas import Series
 import os
-import pprint
 import calibrate
-
+import shocker
 
 current_path = os.path.abspath(os.path.dirname(__file__))
 sam_path = os.path.join(current_path, "PH_SAM.xlsx")
@@ -81,7 +78,12 @@ def row_col_equal():
     col_sum = sam_small.sum(axis=1)
     np.testing.assert_allclose(row_sum, col_sum)
 
-def runner():
+def runner(return_period, affected_regions):
+
+    # Get new percentage values
+    sector_shocks = shocker.get_shocks(return_period, affected_regions)
+    print("Sector Shocks:", sector_shocks)
+
     # Create model
     model = ConcreteModel()
 
@@ -90,31 +92,32 @@ def runner():
                            'INF', 'FIN', 'REA', 'PBS', 'PAD', 'EDU', 'HHS', 'OTH'])
     model.h = Set(initialize=['CAP', 'LAB'])
 
-    sector_shocks = {
-        'AGR': -0.1,
-        'MIN': -0.2,
-        'MAN': -0.3,
-        'ESW': -0.1,
-        'CON': -0.2,
-        'WRT': -0.3,
-        'TRS': -0.1,
-        'AFS': -0.2,
-        'INF': -0.3,
-        'FIN': -0.1,
-        'REA': -0.2,
-        'PBS': -0.3,
-        'PAD': -0.1,
-        'EDU': -0.2,
-        'HHS': -0.3,
-        'OTH': -0.1,
-    }
+    # sector_shocks = {
+    #     'AGR': -0.1,
+    #     'MIN': -0.2,
+    #     'MAN': -0.3,
+    #     'ESW': -0.1,
+    #     'CON': -0.2,
+    #     'WRT': -0.3,
+    #     'TRS': -0.1,
+    #     'AFS': -0.2,
+    #     'INF': -0.3,
+    #     'FIN': -0.1,
+    #     'REA': -0.2,
+    #     'PBS': -0.3,
+    #     'PAD': -0.1,
+    #     'EDU': -0.2,
+    #     'HHS': -0.3,
+    #     'OTH': -0.1,
+    # }
     # Define Parameters
     d = calibrate.model_data(sam, h, ind)
     p = calibrate.parameters(d, ind, sam, shocks=sector_shocks) 
 
-    for j, shock in sector_shocks.items():
-        if j in p.b:
-            p.b[j] *= (1 + shock)
+    # Applying shock to b_j = scaling coefficient in the composite factor production function
+    # for j, shock in sector_shocks.items():
+    #     if j in p.b:
+    #         p.b[j] *= (1 + shock)
 
     # Add to Pyomo params
     model.tauz = Param(model.ind, initialize=p.tauz.to_dict(), within=Reals)
@@ -187,9 +190,9 @@ def runner():
         return model.Y[j] == model.b[j] * prod(model.F[h,j]**model.beta[h,j] for h in model.h)
     model.eq_6_1 = Constraint(model.ind, rule=eq_6_1)
 
-    # def eq_6_2(model, h, j):
-    #     return model.F[h,j] == model.beta[h,j] * model.Y[j] * model.py[j] / model.pf[h]
-    # model.eq_6_2 = Constraint(model.h, model.ind, rule=eq_6_2)
+    def eq_6_2(model, h, j):
+        return model.F[h,j] == model.beta[h,j] * model.Y[j] * model.py[j] / model.pf[h]
+    model.eq_6_2 = Constraint(model.h, model.ind, rule=eq_6_2)
 
     def eq_6_3(model, i, j):
         return model.X[i,j] == model.ax[i,j] * model.Z[j]
@@ -250,9 +253,9 @@ def runner():
         return model.pm[i] == model.epsilon * model.pWm
     model.eq_6_15 = Constraint(model.ind, rule=eq_6_15)
     
-    def eq_6_16(model):
-        return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
-    model.eq_6_16 = Constraint(rule=eq_6_16)
+    # def eq_6_16(model):
+    #     return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
+    # model.eq_6_16 = Constraint(rule=eq_6_16)
 
     # Substitution between imports and domestic goods:
     # (Armington Composite)
@@ -308,8 +311,17 @@ def runner():
     model.epsilon.fix(1)
     
     solver = SolverFactory('ipopt')
-    results = solver.solve(model, tee=True)
 
+    # Set IPOPT options
+    # solver.options['max_iter'] = 5000           # maximum number of iterations (default was 3000)
+    # solver.options['tol'] = 1e-6                # relative tolerance (default was 1e-8)
+    # solver.options['constr_viol_tol'] = 1e-6    # constraint violation tolerance (default was 1e-8)
+    # solver.options['acceptable_tol'] = 1e-4     # acceptable solution tolerance
+    # solver.options['print_level'] = 5
+    # solver.options['output_file'] = "ipopt_log.txt"
+
+    results = solver.solve(model, tee=True)
+    
     # Display results
     model.Q.display()
     model.pf.display()
@@ -317,5 +329,9 @@ def runner():
     model.pz.display()
     model.pq.display()
     
-    # Error     
-runner()
+    # Error
+
+return_period = 5 
+affected_regions = ["IVA", "VII", "NCR", "I", "BARMM"]
+
+runner(return_period, affected_regions)
