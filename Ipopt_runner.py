@@ -78,7 +78,7 @@ def row_col_equal():
     col_sum = sam_small.sum(axis=1)
     np.testing.assert_allclose(row_sum, col_sum)
 
-def runner(return_period, affected_regions):
+def runner(return_period: int, affected_regions: list):
 
     # Get new percentage values
     sector_shocks = shocker.get_shocks(return_period, affected_regions)
@@ -331,7 +331,22 @@ def runner(return_period, affected_regions):
     
     # Error
 
-return_period = 5 
-affected_regions = ["IVA", "VII", "NCR", "I", "BARMM"]
-
+return_period = 50
+affected_regions = ["NCR", 
+                    "CAR", 
+                    "I", 
+                    "II", 
+                    "III", 
+                    "IVA", 
+                    "IVB", 
+                    "V", 
+                    "VI", 
+                    "VII", 
+                    "VIII", 
+                    "IX", 
+                    "X", 
+                    "XI", 
+                    "XII", 
+                    "XIII", 
+                    "BARMM"] 
 runner(return_period, affected_regions)

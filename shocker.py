@@ -87,5 +87,22 @@ def get_shocks(return_period: int, affected_regions: list):
 
     return sector_shocks
 
-aff = ["IVA", "VII", "NCR", "I", "BARMM"]
-get_shocks(5, aff)
+# aff = ["NCR", 
+#        "CAR", 
+#        "I", 
+#        "II", 
+#        "III", 
+#        "IVA", 
+#        "IVB", 
+#        "V", 
+#        "VI", 
+#        "VII", 
+#        "VIII", 
+#        "IX", 
+#        "X", 
+#        "XI", 
+#        "XII", 
+#        "XIII", 
+#        "BARMM"] 
+
+# get_shocks(50, aff)
