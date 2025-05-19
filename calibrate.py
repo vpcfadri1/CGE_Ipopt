@@ -58,6 +58,7 @@ class model_data(object):
         self.Xp0 = DataFrame(sam, index=list(ind), columns=["HOH"])
         # government consumption Y
         self.Xg0 = DataFrame(sam, index=list(ind), columns=["GOV"])
+
         # investment demand Y
         self.Xv0 = DataFrame(sam, index=list(ind), columns=["INV"])
         # exports Y
@@ -118,7 +119,7 @@ class parameters(object):
             CGE model.
     """
 
-    def __init__(self, d, ind, sam):
+    def __init__(self, d, ind, sam, shocks=None):
         # foreign saving Y
         self.Sf0 = DataFrame(sam, index=["INV"], columns=["EXT"])
         # private saving Y
@@ -139,11 +140,28 @@ class parameters(object):
         # share parameter in utility function Y
         self.alpha = d.Xp0 / d.XXp0
         self.alpha = self.alpha["HOH"]  # ONLY HOH?
+
+        #Shock to share parameter in the utility function
+        # Reduce household consumption / household demand
+        if shocks:
+            for j, shock in shocks.items():
+                if j in self.alpha:
+                    print(f"Applying shock to {j}: {shock}")
+                    self.alpha[j] *= shock
+
+
         # share parameter in production function Y
         self.beta = d.F0 / d.Y0
         temp = d.F0**self.beta
         # scale parameter in production function Y
         self.b = d.Y0 / temp.prod(axis=0)
+
+        # Shock parameters to scaling coefficient in the composite factor production function,
+        # if shocks:
+        #     for j, shock in shocks.items():
+        #         if j in self.b:
+        #             print(f"Applying shock to {j}: {shock}")
+        #             self.b[j] *= (1 + shock)
 
         # intermediate input requirement coefficient Y
         self.ax = d.X0 / d.Z0
