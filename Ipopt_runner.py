@@ -181,7 +181,8 @@ def runner(return_period: int, affected_regions: list):
     model.py.display()
     model.pz.display()
     model.pq.display()
-    model.F.display
+    model.F.display()
+    model.Y.display()
 
     # Define Equations
 
@@ -259,9 +260,6 @@ def runner(return_period: int, affected_regions: list):
     # def eq_6_16(model):
     #     return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
     # model.eq_6_16 = Constraint(rule=eq_6_16)
-    # def eq_6_16(model):
-    #     return sum(model.pWe * model.E[i] for i in model.ind) + model.Sf == sum(model.pWm * model.M[i] for i in model.ind)
-    # model.eq_6_16 = Constraint(rule=eq_6_16)
 
     # Substitution between imports and domestic goods:
     # (Armington Composite)
@@ -334,25 +332,27 @@ def runner(return_period: int, affected_regions: list):
     model.py.display()
     model.pz.display()
     model.pq.display()
+    model.F.display()
+    model.Y.display()
     
     # Error
 
 return_period = 50
-affected_regions = ["NCR", 
-                    "CAR", 
-                    "I", 
-                    "II", 
-                    "III", 
-                    "IVA", 
-                    "IVB", 
-                    "V", 
-                    "VI", 
-                    "VII", 
-                    "VIII", 
-                    "IX", 
-                    "X", 
-                    "XI", 
-                    "XII", 
-                    "XIII", 
-                    "BARMM"] 
+affected_regions = ["NCR"]
+#                     "CAR", 
+#                     "I", 
+#                     "II", 
+#                     "III", 
+#                     "IVA", 
+#                     "IVB", 
+#                     "V", 
+#                     "VI", 
+#                     "VII", 
+#                     "VIII", 
+#                     "IX", 
+#                     "X", 
+#                     "XI", 
+#                     "XII", 
+#                     "XIII", 
+#                     "BARMM"] 
 runner(return_period, affected_regions)

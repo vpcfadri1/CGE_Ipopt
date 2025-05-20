@@ -1,6 +1,7 @@
 # import packages
 import numpy as np
 from pandas import Series, DataFrame
+import shocker
 from pprint import pprint
 
 class model_data(object):
@@ -45,7 +46,7 @@ class model_data(object):
         # the h-th factor input by the j-th firm correct Y
         self.F0 = DataFrame(sam, index=list(h), columns=list(ind))
         # factor endowment of the h-th factor correct Y
-        self.Ff0 = self.F0.sum(axis=1)
+        self.Ff0 = self.F0.sum(axis=1) 
         # composite factor (value added) Y
         self.Y0 = self.F0.sum(axis=0)
         # intermediate input Y
@@ -91,13 +92,6 @@ class model_data(object):
         self.Mm0 = self.M0.sum()
         # aggregate exports
         self.Ee0 = self.E0.sum()
-        # aggregate gross domestic product
-        # self.Gdp0 = self.XXp0 + self.XXv0 + self.XXg0 + self.Ee0 - self.Mm0
-        # growth rate of capital stock
-        # self.g = self.XXv0 / self.Kk0
-        # interest rate
-        # self.R0 = self.Ff0["CAP"] / self.Kk0
-
         # export price index Y
         self.pWe = np.ones(len(ind))
         self.pWe = Series(self.pWe, index=list(ind))
@@ -141,13 +135,13 @@ class parameters(object):
         self.alpha = d.Xp0 / d.XXp0
         self.alpha = self.alpha["HOH"]  # ONLY HOH?
 
-        #Shock to share parameter in the utility function
+        # Shock to share parameter in the utility function
         # Reduce household consumption / household demand
-        if shocks:
-            for j, shock in shocks.items():
-                if j in self.alpha:
-                    print(f"Applying shock to {j}: {shock}")
-                    self.alpha[j] *= shock
+        # if shocks:
+        #     for j, shock in shocks.items():
+        #         if j in self.alpha:
+        #             print(f"Applying shock to {j}: {shock}")
+        #             self.alpha[j] *= shock
 
 
         # share parameter in production function Y
@@ -156,12 +150,13 @@ class parameters(object):
         # scale parameter in production function Y
         self.b = d.Y0 / temp.prod(axis=0)
 
-        # Shock parameters to scaling coefficient in the composite factor production function,
-        # if shocks:
-        #     for j, shock in shocks.items():
-        #         if j in self.b:
-        #             print(f"Applying shock to {j}: {shock}")
-        #             self.b[j] *= (1 + shock)
+        # Shock parameters to scaling coefficient in the composite factor production function
+        print(shocks)
+        if shocks:
+            for j, shock in shocks.items():
+                if j in self.b:
+                    print(f"Applying shock to {j}: {shock}")
+                    self.b[j] *= shock
 
         # intermediate input requirement coefficient Y
         self.ax = d.X0 / d.Z0
