@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 
 def export_pyomo_variables_to_excel(model, variables_names, filename):
     with pd.ExcelWriter(filename, engine='openpyxl') as writer:
@@ -47,3 +48,38 @@ def shocked_variables_to_excel(model, variable_names, old_filename, new_filename
             old_df.to_excel(writer, sheet_name=var_name[:31], index=False)
 
     return
+
+
+
+def create_charts(file_name, var_name, name, two_vars=False):
+    # Create a bar chart comparing two variables from an Excel file
+
+    df = pd.read_excel(file_name, sheet_name=var_name, header=0)
+
+    x = df['Sector']
+    y1 = df['Initial Equilibrium']
+    y2 = df['Baseline Model Run']
+    y3 = df['Change (%)']
+    width = 0.35  
+    x_pos = range(len(x))  
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    if two_vars:
+        ax.bar([p - width/2 for p in x_pos], y1, width, label='Initial Equilibrium', )
+        ax.bar([p + width/2 for p in x_pos], y2, width, label='Shocked Equilibrium', )
+    else:
+        ax.bar(x_pos, y3, width, label='Initial Equilibrium')
+        ax.axhline(0, color='black', linewidth=1)
+
+
+    ax.set_xlabel("Sectors")
+    ax.set_ylabel("Value")
+
+    ax.set_title(f"{name}: Initial vs. Shocked Equilibrium")
+    ax.set_xticks(list(x_pos))
+    ax.set_xticklabels(x, rotation=45)
+
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
