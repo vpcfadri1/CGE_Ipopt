@@ -114,6 +114,12 @@ class parameters(object):
     """
 
     def __init__(self, d, ind, sam, shocks=None):
+        # elasticity of substitution; Y constant in GAMS sample
+        self.sigma = Series(2, index=list(ind))
+        # substitution elasticity parameter Y
+        self.eta = (self.sigma - 1) / self.sigma
+
+        
         # foreign saving Y
         self.Sf0 = DataFrame(sam, index=["INV"], columns=["EXT"])
         # private saving Y
@@ -121,10 +127,7 @@ class parameters(object):
         # government saving/budget balance Y
         self.Sg0 = DataFrame(sam, index=["INV"], columns=["GOV"])
 
-        # elasticity of substitution; Y constant in GAMS sample
-        self.sigma = Series(2, index=list(ind))
-        # substitution elasticity parameter Y
-        self.eta = (self.sigma - 1) / self.sigma
+        
 
         # elasticity of transformation; Y constant in GAMS sample
         self.psi = Series(2, index=list(ind))
@@ -151,12 +154,12 @@ class parameters(object):
         self.b = d.Y0 / temp.prod(axis=0)
 
         # Shock parameters to scaling coefficient in the composite factor production function
-        print(shocks)
-        if shocks:
-            for j, shock in shocks.items():
-                if j in self.b:
-                    print(f"Applying shock to {j}: {shock}")
-                    self.b[j] *= shock
+        # print(shocks)
+        # if shocks:
+        #     for j, shock in shocks.items():
+        #         if j in self.b:
+        #             print(f"Applying shock to {j}: {shock}")
+        #             self.b[j] *= shock
 
         # intermediate input requirement coefficient Y
         self.ax = d.X0 / d.Z0

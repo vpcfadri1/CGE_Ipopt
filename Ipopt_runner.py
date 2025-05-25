@@ -4,6 +4,9 @@ import pandas as pd
 import os
 import calibrate
 import shocker
+import pandas as pd
+from pyomo.core.base.var import _GeneralVarData
+from pyomo.core.base.param import _ParamData
 
 current_path = os.path.abspath(os.path.dirname(__file__))
 sam_path = os.path.join(current_path, "PH_SAM.xlsx")
@@ -78,6 +81,31 @@ def row_col_equal():
     col_sum = sam_small.sum(axis=1)
     np.testing.assert_allclose(row_sum, col_sum)
 
+def export_pyomo_variables_to_excel(model, variables_names, filename):
+    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+        for var_name in variables_names:
+            if not hasattr(model, var_name):
+                print(f"No variable named {var_name} in the model")
+                return
+            var = getattr(model, var_name)
+            data = {k: v.value for k, v in var.items()}
+
+            # check if scalar
+            if len(data) == 1:
+                value = data[None]
+                df = pd.DataFrame([[value]])
+            
+            # check if iterated over factors or industries
+            if len(data) == 2 or len(data) == 16:
+                df = pd.DataFrame([[k, v] for k, v in data.items()])
+
+            # check if iterated over factors or industries
+            if len(data) == 32: 
+                df = pd.DataFrame([(*k, v) for k, v in data.items()])
+            
+            df.to_excel(writer, sheet_name=var_name[:31], index=False)
+    return
+
 def runner(return_period: int, affected_regions: list):
 
     # Get new percentage values
@@ -151,6 +179,9 @@ def runner(return_period: int, affected_regions: list):
     model.tau_d = Param(initialize=float(p.taud), within=Reals)
     
     # Add to Pyomo Variables
+    model_variables = ["Y", "F", "X", "Z", "Xp", "Xg", "Xv", "E", "M", "Q", "D",
+    "pf", "py", "pz", "pq", "pe", "pm", "pd", 
+    "epsilon", "Sp", "Sg", "Td", "Tz", "Tm"]
     model.Y = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Y0.to_dict())    
     model.F = Var(model.h, model.ind, bounds=(0.0001, None),  within=NonNegativeReals, initialize={(h,j): d.F0.loc[h,j] for h in model.h for j in model.ind})
     model.X = Var(model.ind, model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize={(i,j): d.X0.loc[i,j] for i in model.ind for j in model.ind})
@@ -175,15 +206,19 @@ def runner(return_period: int, affected_regions: list):
     model.Td = Var(bounds=(0.0001, None),within=NonNegativeReals, initialize=d.Td0.loc['GOV', 'HOH'])
     model.Tz = Var(model.ind, bounds=(0.0000, None), within=NonNegativeReals, initialize=d.Tz0.loc['IDT'].to_dict())
     model.Tm = Var(model.ind, bounds=(0.0000, None), within=NonNegativeReals, initialize=d.Tm0.loc['TRF'].to_dict())
+    export_pyomo_variables_to_excel(model, model_variables, filename="cge_variables.xlsx")
     # Display paramaters
-    model.Q.display()
-    model.pf.display()
-    model.py.display()
-    model.pz.display()
-    model.pq.display()
-    model.F.display()
-    model.Y.display()
-
+    # model.Q.display()
+    # model.pf.display()
+    # model.py.display()
+    # model.pz.display()
+    # model.pq.display()
+    # model.F.display()
+    # model.Y.display()
+    var = getattr(model,"epsilon")
+    
+    data = {k: v.value for k, v in var.items() if isinstance(v, _GeneralVarData)}
+    print(data)
     # Define Equations
 
     # Domestic Production:
@@ -194,10 +229,7 @@ def runner(return_period: int, affected_regions: list):
     def eq_6_2(model, h, j):
         return model.F[h,j] == model.beta[h,j] * model.Y[j] * model.py[j] / model.pf[h]
     model.eq_6_2 = Constraint(model.h, model.ind, rule=eq_6_2)
-    def eq_6_2(model, h, j):
-        return model.F[h,j] == model.beta[h,j] * model.Y[j] * model.py[j] / model.pf[h]
-    model.eq_6_2 = Constraint(model.h, model.ind, rule=eq_6_2)
-
+    
     def eq_6_3(model, i, j):
         return model.X[i,j] == model.ax[i,j] * model.Z[j]
     model.eq_6_3 = Constraint(model.ind, model.ind, rule=eq_6_3)
@@ -263,6 +295,7 @@ def runner(return_period: int, affected_regions: list):
 
     # Substitution between imports and domestic goods:
     # (Armington Composite)
+
     def eq_6_17(model, i):
         return model.Q[i] == model.gamma[i] * (
             model.deltam[i] * model.M[i]**model.eta[i] + model.deltad[i] * model.D[i]**model.eta[i])**(1/model.eta[i])
@@ -324,18 +357,17 @@ def runner(return_period: int, affected_regions: list):
     # solver.options['print_level'] = 5
     # solver.options['output_file'] = "ipopt_log.txt"
 
-    results = solver.solve(model, tee=True)
+    # results = solver.solve(model, tee=True)
     
     # Display results
-    model.Q.display()
-    model.pf.display()
-    model.py.display()
-    model.pz.display()
-    model.pq.display()
-    model.F.display()
-    model.Y.display()
+    # model.Q.display()
+    # model.pf.display()
+    # model.py.display()
+    # model.pz.display()
+    # model.pq.display()
+    # model.F.display()
+    # model.Y.display()
     
-    # Error
 
 return_period = 50
 affected_regions = ["NCR"]
