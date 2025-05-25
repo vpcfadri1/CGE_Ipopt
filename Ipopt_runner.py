@@ -339,9 +339,8 @@ def runner(return_period: int, affected_regions: list):
     visualize_data.shocked_variables_to_excel(model, model_variables, "cge_variables.xlsx", "shocked_variables.xlsx")
     
     # Generate charts
-    visualize_data.create_charts("shocked_variables.xlsx", "Q", "Amount of Total Supply, Q", two_vars=True)
-    visualize_data.create_charts("shocked_variables.xlsx", "pq", "Composite Price (Final Good), pq")
-    visualize_data.create_charts("shocked_variables.xlsx", "pz", "Price of Domestic Output, pz")
+    visualize_data.create_charts("shocked_variables.xlsx", "Z", "GDP per Sector, Z", two_vars=True)
+    visualize_data.create_charts("shocked_variables.xlsx", "pq", "Final Good Price, pq")
 
 return_period = 50
 affected_regions = ["NCR", #"CAR", "II", "V", "VIII", "X"]

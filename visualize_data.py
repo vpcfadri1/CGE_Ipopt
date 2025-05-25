@@ -68,7 +68,7 @@ def create_charts(file_name, var_name, name, two_vars=False):
     if two_vars: # For compare two variables like for Q
         ax.bar([p - width/2 for p in x_pos], y1, width, label='Initial Equilibrium', )
         ax.bar([p + width/2 for p in x_pos], y2, width, label='Shocked Equilibrium', )
-        ax.set_ylabel("Amount of Supply in Millios of Pesos")
+        ax.set_ylabel("GDP in Millios of Pesos")
         ax.legend()
 
     else:       # To see the change in price
