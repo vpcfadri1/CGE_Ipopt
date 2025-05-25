@@ -7,6 +7,7 @@ import shocker
 import pandas as pd
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
+import ast
 
 current_path = os.path.abspath(os.path.dirname(__file__))
 sam_path = os.path.join(current_path, "PH_SAM.xlsx")
@@ -94,17 +95,41 @@ def export_pyomo_variables_to_excel(model, variables_names, filename):
             if len(data) == 1:
                 value = data[None]
                 df = pd.DataFrame([[value]])
-            
-            # check if iterated over factors or industries
-            if len(data) == 2 or len(data) == 16:
-                df = pd.DataFrame([[k, v] for k, v in data.items()])
-
-            # check if iterated over factors or industries
-            if len(data) == 32: 
-                df = pd.DataFrame([(*k, v) for k, v in data.items()])
+            else:
+                df = pd.DataFrame([(k, v) for k, v in data.items()])
             
             df.to_excel(writer, sheet_name=var_name[:31], index=False)
     return
+
+
+def shocked_variables_to_excel(model, variable_names, old_filename, new_filename):
+    with pd.ExcelWriter(new_filename, engine='openpyxl') as writer:
+        for var_name in variable_names:
+            var = getattr(model, var_name)
+            data = {k: v.value for k, v in var.items()}
+            data_str_keys = {str(k): v for k, v in data.items()}
+
+            old_df = pd.read_excel(old_filename, sheet_name=var_name)
+            # check if scalar
+            if len(data) == 1:
+                updated_value = data[None]
+                original_value = old_df.iloc[0, 0]
+                old_df["Updated"] = [updated_value]
+                percent_change = (updated_value - original_value) / original_value * 100
+                old_df["%Change"] = [percent_change]
+            else:
+                index_col = old_df.iloc[:, 0]
+                original_col = old_df.iloc[:, 1]
+                old_df["key_tuple"] = list(zip(old_df.iloc[:, 0], old_df.iloc[:, 1]))
+                old_df["Updated"] = index_col.map(data_str_keys)
+                old_df["%Change"] = 100 * (old_df["Updated"] - original_col) / original_col
+                old_df = old_df.drop(columns=["key_tuple"])
+                old_df = old_df.rename(columns={0: "Sector", 1: "Initial Equilibrium", "Updated": "Baseline Model Run", "%Change": "Change (%)"},)
+            
+            old_df.to_excel(writer, sheet_name=var_name[:31], index=False)
+
+    return
+
 
 def runner(return_period: int, affected_regions: list):
 
@@ -357,20 +382,13 @@ def runner(return_period: int, affected_regions: list):
     # solver.options['print_level'] = 5
     # solver.options['output_file'] = "ipopt_log.txt"
 
-    # results = solver.solve(model, tee=True)
+    results = solver.solve(model, tee=True)
+    shocked_variables_to_excel(model, model_variables, "cge_variables.xlsx", "shocked_variables.xlsx")
     
-    # Display results
-    # model.Q.display()
-    # model.pf.display()
-    # model.py.display()
-    # model.pz.display()
-    # model.pq.display()
-    # model.F.display()
-    # model.Y.display()
     
 
 return_period = 50
-affected_regions = ["NCR"]
+affected_regions = ["CAR", "I", "II", "III"]
 #                     "CAR", 
 #                     "I", 
 #                     "II", 

@@ -155,11 +155,11 @@ class parameters(object):
 
         # Shock parameters to scaling coefficient in the composite factor production function
         # print(shocks)
-        # if shocks:
-        #     for j, shock in shocks.items():
-        #         if j in self.b:
-        #             print(f"Applying shock to {j}: {shock}")
-        #             self.b[j] *= shock
+        if shocks:
+            for j, shock in shocks.items():
+                if j in self.b:
+                    print(f"Applying shock to {j}: {shock}")
+                    self.b[j] *= shock
 
         # intermediate input requirement coefficient Y
         self.ax = d.X0 / d.Z0
