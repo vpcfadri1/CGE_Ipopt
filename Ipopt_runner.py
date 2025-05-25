@@ -8,6 +8,7 @@ import pandas as pd
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
 import ast
+import visualize_data
 
 current_path = os.path.abspath(os.path.dirname(__file__))
 sam_path = os.path.join(current_path, "PH_SAM.xlsx")
@@ -81,55 +82,6 @@ def row_col_equal():
     row_sum = sam_small.sum(axis=0)
     col_sum = sam_small.sum(axis=1)
     np.testing.assert_allclose(row_sum, col_sum)
-
-def export_pyomo_variables_to_excel(model, variables_names, filename):
-    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
-        for var_name in variables_names:
-            if not hasattr(model, var_name):
-                print(f"No variable named {var_name} in the model")
-                return
-            var = getattr(model, var_name)
-            data = {k: v.value for k, v in var.items()}
-
-            # check if scalar
-            if len(data) == 1:
-                value = data[None]
-                df = pd.DataFrame([[value]])
-            else:
-                df = pd.DataFrame([(k, v) for k, v in data.items()])
-            
-            df.to_excel(writer, sheet_name=var_name[:31], index=False)
-    return
-
-
-def shocked_variables_to_excel(model, variable_names, old_filename, new_filename):
-    with pd.ExcelWriter(new_filename, engine='openpyxl') as writer:
-        for var_name in variable_names:
-            var = getattr(model, var_name)
-            data = {k: v.value for k, v in var.items()}
-            data_str_keys = {str(k): v for k, v in data.items()}
-
-            old_df = pd.read_excel(old_filename, sheet_name=var_name)
-            # check if scalar
-            if len(data) == 1:
-                updated_value = data[None]
-                original_value = old_df.iloc[0, 0]
-                old_df["Updated"] = [updated_value]
-                percent_change = (updated_value - original_value) / original_value * 100
-                old_df["%Change"] = [percent_change]
-            else:
-                index_col = old_df.iloc[:, 0]
-                original_col = old_df.iloc[:, 1]
-                old_df["key_tuple"] = list(zip(old_df.iloc[:, 0], old_df.iloc[:, 1]))
-                old_df["Updated"] = index_col.map(data_str_keys)
-                old_df["%Change"] = 100 * (old_df["Updated"] - original_col) / original_col
-                old_df = old_df.drop(columns=["key_tuple"])
-                old_df = old_df.rename(columns={0: "Sector", 1: "Initial Equilibrium", "Updated": "Baseline Model Run", "%Change": "Change (%)"},)
-            
-            old_df.to_excel(writer, sheet_name=var_name[:31], index=False)
-
-    return
-
 
 def runner(return_period: int, affected_regions: list):
 
@@ -231,7 +183,8 @@ def runner(return_period: int, affected_regions: list):
     model.Td = Var(bounds=(0.0001, None),within=NonNegativeReals, initialize=d.Td0.loc['GOV', 'HOH'])
     model.Tz = Var(model.ind, bounds=(0.0000, None), within=NonNegativeReals, initialize=d.Tz0.loc['IDT'].to_dict())
     model.Tm = Var(model.ind, bounds=(0.0000, None), within=NonNegativeReals, initialize=d.Tm0.loc['TRF'].to_dict())
-    export_pyomo_variables_to_excel(model, model_variables, filename="cge_variables.xlsx")
+    
+    visualize_data.export_pyomo_variables_to_excel(model, model_variables, filename="cge_variables.xlsx")
     # Display paramaters
     # model.Q.display()
     # model.pf.display()
@@ -383,26 +336,26 @@ def runner(return_period: int, affected_regions: list):
     # solver.options['output_file'] = "ipopt_log.txt"
 
     results = solver.solve(model, tee=True)
-    shocked_variables_to_excel(model, model_variables, "cge_variables.xlsx", "shocked_variables.xlsx")
+    visualize_data.shocked_variables_to_excel(model, model_variables, "cge_variables.xlsx", "shocked_variables.xlsx")
     
     
 
 return_period = 50
-affected_regions = ["CAR", "I", "II", "III"]
-#                     "CAR", 
-#                     "I", 
-#                     "II", 
-#                     "III", 
-#                     "IVA", 
-#                     "IVB", 
-#                     "V", 
-#                     "VI", 
-#                     "VII", 
-#                     "VIII", 
-#                     "IX", 
-#                     "X", 
-#                     "XI", 
-#                     "XII", 
-#                     "XIII", 
-#                     "BARMM"] 
+affected_regions = ["NCR", #"CAR", "II", "V", "VIII", "X"]
+                    "CAR", 
+                    "I", 
+                    "II", 
+                    "III", 
+                    "IVA", 
+                    "IVB", 
+                    "V", 
+                    "VI", 
+                    "VII", 
+                    "VIII", 
+                    "IX", 
+                    "X", 
+                    "XI", 
+                    "XII", 
+                    "XIII", 
+                    "BARMM"] 
 runner(return_period, affected_regions)
