@@ -16,14 +16,14 @@ sam = pd.read_excel(sam_path, index_col=0, header=0)
 
 # declare sets of variables
 u = (
-    "AGR", "MIN", "MAN", "ESW", "CON", "WRT", "TRS", "AFS", "INF", "FIN", 
-    "REA", "PBS", "PAD", "EDU", "HHS", "OTH", "CAP", "LAB", "IDT", "TRF", 
+    "AFF", "MAQ", "MFG", "ESWW", "CNS", "TRD", "TAS", "AFSA", "IAC", "FIA", 
+    "REOD", "PBS", "PAD", "EDUC", "HHSW", "OS", "CAP", "LAB", "IDT", "TRF", 
     "HOH", "GOV", "INV", "EXT"
 )
 
 ind = (
-    "AGR", "MIN", "MAN", "ESW", "CON", "WRT", "TRS", "AFS", "INF", "FIN", 
-    "REA", "PBS", "PAD", "EDU", "HHS", "OTH"
+    "AFF", "MAQ", "MFG", "ESWW", "CNS", "TRD", "TAS", "AFSA", "IAC", "FIA", 
+    "REOD", "PBS", "PAD", "EDUC", "HHSW", "OS",
 )
 
 h = ("CAP", "LAB")
@@ -93,27 +93,27 @@ def runner(return_period: int, affected_regions: list):
     model = ConcreteModel()
 
     # Define Sets
-    model.ind = Set(initialize=['AGR', 'MIN', 'MAN', 'ESW', 'CON', 'WRT', 'TRS', 'AFS', 
-                           'INF', 'FIN', 'REA', 'PBS', 'PAD', 'EDU', 'HHS', 'OTH'])
+    model.ind = Set(initialize=["AFF", "MAQ", "MFG", "ESWW", "CNS", "TRD", "TAS", "AFSA", 
+                                "IAC", "FIA", "REOD", "PBS", "PAD", "EDUC", "HHSW", "OS"])
     model.h = Set(initialize=['CAP', 'LAB'])
 
     # sector_shocks = {
-    #     'AGR': -0.1,
-    #     'MIN': -0.2,
-    #     'MAN': -0.3,
-    #     'ESW': -0.1,
-    #     'CON': -0.2,
-    #     'WRT': -0.3,
-    #     'TRS': -0.1,
-    #     'AFS': -0.2,
-    #     'INF': -0.3,
-    #     'FIN': -0.1,
-    #     'REA': -0.2,
+    #     'AFF': -0.1,
+    #     'MAQ': -0.2,
+    #     'MFG': -0.3,
+    #     'ESWW': -0.1,
+    #     'CNS': -0.2,
+    #     'TRD': -0.3,
+    #     'TAS': -0.1,
+    #     'AFSA': -0.2,
+    #     'IAC': -0.3,
+    #     'FIA': -0.1,
+    #     'REOD': -0.2,
     #     'PBS': -0.3,
     #     'PAD': -0.1,
-    #     'EDU': -0.2,
-    #     'HHS': -0.3,
-    #     'OTH': -0.1,
+    #     'EDUC': -0.2,
+    #     'HHSW': -0.3,
+    #     'OS': -0.1,
     # }
     # Define Parameters
     d = calibrate.model_data(sam, h, ind)
