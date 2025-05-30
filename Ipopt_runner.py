@@ -342,22 +342,23 @@ def runner(return_period: int, affected_regions: list):
     visualize_data.create_charts("shocked_variables.xlsx", "Z", "GDP per Sector, Z", two_vars=True)
     visualize_data.create_charts("shocked_variables.xlsx", "pq", "Final Good Price, pq")
 
-return_period = 50
-affected_regions = ["NCR", #"CAR", "II", "V", "VIII", "X"]
-                    "CAR", 
-                    "I", 
-                    "II", 
-                    "III", 
-                    "IVA", 
-                    "IVB", 
-                    "V", 
-                    "VI", 
-                    "VII", 
-                    "VIII", 
-                    "IX", 
-                    "X", 
-                    "XI", 
-                    "XII", 
-                    "XIII", 
-                    "BARMM"] 
+return_period = 20
+affected_regions = ["CAR", "II", "V", "VIII", "X"]
+                    # "NCR", 
+                    # "CAR", 
+                    # "I", 
+                    # "II", 
+                    # "III", 
+                    # "IVA", 
+                    # "IVB", 
+                    # "V", 
+                    # "VI", 
+                    # "VII", 
+                    # "VIII", 
+                    # "IX", 
+                    # "X", 
+                    # "XI", 
+                    # "XII", 
+                    # "XIII", 
+                    # "BARMM"] 
 runner(return_period, affected_regions)
