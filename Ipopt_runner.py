@@ -339,11 +339,12 @@ def runner(return_period: int, affected_regions: list):
     visualize_data.shocked_variables_to_excel(model, model_variables, "cge_variables.xlsx", "shocked_variables.xlsx")
     
     # Generate charts
-    visualize_data.create_charts("shocked_variables.xlsx", "Z", "GDP per Sector, Z", two_vars=True)
-    visualize_data.create_charts("shocked_variables.xlsx", "pq", "Final Good Price, pq")
+    visualize_data.create_charts("shocked_variables.xlsx", "Z", f"Gross Domestic Output Z per Sector: Initial vs. Shocked Equilibrium ({return_period}-RP)", two_vars=True)
+    visualize_data.create_charts("shocked_variables.xlsx", "pq", f"Change in Price of Domestically Consumed Final Goods pq ({return_period}-RP)")
 
-return_period = 20
-affected_regions = ["CAR", "II", "V", "VIII", "X"]
+return_period = 5
+affected_regions = ["V", "VI", "VIII", "X", "XIII"]
+                    #  ["CAR", "II", "V", "VIII", "X"]
                     # "NCR", 
                     # "CAR", 
                     # "I", 

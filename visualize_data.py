@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import ScalarFormatter
 
 def export_pyomo_variables_to_excel(model, variables_names, filename):
     with pd.ExcelWriter(filename, engine='openpyxl') as writer:
@@ -68,21 +69,24 @@ def create_charts(file_name, var_name, name, two_vars=False):
     if two_vars: # For compare two variables like for Q
         ax.bar([p - width/2 for p in x_pos], y1, width, label='Initial Equilibrium', )
         ax.bar([p + width/2 for p in x_pos], y2, width, label='Shocked Equilibrium', )
-        ax.set_ylabel("GDP in Millios of Pesos")
+        ax.set_ylabel("Gross Domestic Output in Millions of Pesos")
         ax.legend()
 
     else:       # To see the change in price
         ax.bar(x_pos, y3, width, label='Change in Price (%)')
         ax.axhline(0, color='black', linewidth=1)
         ax.set_ylabel("Change in Price (%)")
+        
 
-
+    ax.set_title(name)
     ax.set_xlabel("Sectors")
-
-    ax.set_title(f"{name}: Initial vs. Shocked Equilibrium")
     ax.set_xticks(list(x_pos))
     ax.set_xticklabels(x, rotation=45)
 
-    
+    ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+    ax.ticklabel_format(style='plain', axis='y')  
+    ax.get_yaxis().get_offset_text().set_visible(False) 
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+
     plt.tight_layout()
     plt.show()
