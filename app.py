@@ -25,6 +25,7 @@ affected_regions = st.multiselect(
 if st.button("Run Model"):
     if not affected_regions:
         st.error("Please select at least one affected region.")
+        st.stop()
 
     with st.spinner("Running the model..."):
         try:
