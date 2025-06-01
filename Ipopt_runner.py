@@ -83,11 +83,22 @@ def row_col_equal():
     col_sum = sam_small.sum(axis=1)
     np.testing.assert_allclose(row_sum, col_sum)
 
+
+
+def extract_values(model, variable_name):
+    var = getattr(model, variable_name)
+    data = {k: v.value for k, v in var.items()}
+    data_str_keys = {str(k): v for k, v in data.items()}
+    #print("Shocked Values:", data_str_keys)
+    return data_str_keys
+
+
+
 def runner(return_period: int, affected_regions: list):
 
     # Get new percentage values
     sector_shocks = shocker.get_shocks(return_period, affected_regions)
-    print("Sector Shocks:", sector_shocks)
+    # print("Sector Shocks:", sector_shocks)
 
     # Create model
     model = ConcreteModel()
@@ -97,32 +108,9 @@ def runner(return_period: int, affected_regions: list):
                                 "IAC", "FIA", "REOD", "PBS", "PAD", "EDUC", "HHSW", "OS"])
     model.h = Set(initialize=['CAP', 'LAB'])
 
-    # sector_shocks = {
-    #     'AFF': -0.1,
-    #     'MAQ': -0.2,
-    #     'MFG': -0.3,
-    #     'ESWW': -0.1,
-    #     'CNS': -0.2,
-    #     'TRD': -0.3,
-    #     'TAS': -0.1,
-    #     'AFSA': -0.2,
-    #     'IAC': -0.3,
-    #     'FIA': -0.1,
-    #     'REOD': -0.2,
-    #     'PBS': -0.3,
-    #     'PAD': -0.1,
-    #     'EDUC': -0.2,
-    #     'HHSW': -0.3,
-    #     'OS': -0.1,
-    # }
     # Define Parameters
     d = calibrate.model_data(sam, h, ind)
     p = calibrate.parameters(d, ind, sam, shocks=sector_shocks) 
-
-    # Applying shock to b_j = scaling coefficient in the composite factor production function
-    # for j, shock in sector_shocks.items():
-    #     if j in p.b:
-    #         p.b[j] *= (1 + shock)
 
     # Add to Pyomo params
     model.tauz = Param(model.ind, initialize=p.tauz.to_dict(), within=Reals)
@@ -159,6 +147,7 @@ def runner(return_period: int, affected_regions: list):
     model_variables = ["Y", "F", "X", "Z", "Xp", "Xg", "Xv", "E", "M", "Q", "D",
     "pf", "py", "pz", "pq", "pe", "pm", "pd", 
     "epsilon", "Sp", "Sg", "Td", "Tz", "Tm"]
+
     model.Y = Var(model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize=d.Y0.to_dict())    
     model.F = Var(model.h, model.ind, bounds=(0.0001, None),  within=NonNegativeReals, initialize={(h,j): d.F0.loc[h,j] for h in model.h for j in model.ind})
     model.X = Var(model.ind, model.ind, bounds=(0.0001, None), within=NonNegativeReals, initialize={(i,j): d.X0.loc[i,j] for i in model.ind for j in model.ind})
@@ -193,10 +182,17 @@ def runner(return_period: int, affected_regions: list):
     # model.pq.display()
     # model.F.display()
     # model.Y.display()
-    var = getattr(model,"epsilon")
     
-    data = {k: v.value for k, v in var.items() if isinstance(v, _GeneralVarData)}
-    print(data)
+    # For app:
+    # Baseline Model Data:
+    app_df_Z = pd.DataFrame.from_dict(sector_shocks, orient='index', columns=['Shock Applied'])
+    init_Z = extract_values(model, "Z")       # Gross Domestic Output
+    app_df_Z['Initial Z'] = pd.Series(init_Z)
+  
+    app_df_pq = pd.DataFrame.from_dict(sector_shocks, orient='index', columns=['Shock Applied'])
+    init_pq = extract_values(model, "pq")     # Price of Domestically Consumed Final Goods
+    app_df_pq['Initial pq'] = pd.Series(init_pq)
+
     # Define Equations
 
     # Domestic Production:
@@ -338,9 +334,23 @@ def runner(return_period: int, affected_regions: list):
     results = solver.solve(model, tee=True)
     visualize_data.shocked_variables_to_excel(model, model_variables, "cge_variables.xlsx", "shocked_variables.xlsx")
     
-    # Generate charts
-    visualize_data.create_charts("shocked_variables.xlsx", "Z", f"Gross Domestic Output Z per Sector: Initial vs. Shocked Equilibrium ({return_period}-RP)", two_vars=True)
-    visualize_data.create_charts("shocked_variables.xlsx", "pq", f"Change in Price of Domestically Consumed Final Goods pq ({return_period}-RP)")
+    # Generate Chart - uncomment to visualize data
+    # visualize_data.create_charts("shocked_variables.xlsx", "Z", f"Gross Domestic Output Z per Sector: Initial vs. Shocked Equilibrium ({return_period}-RP)", two_vars=True)
+    # visualize_data.create_charts("shocked_variables.xlsx", "pq", f"Change in Price of Domestically Consumed Final Goods pq ({return_period}-RP)")
+
+    # Shocked Values:
+    shock_Z = extract_values(model, "Z")
+    app_df_Z['Shocked Z'] = pd.Series(shock_Z)
+    app_df_Z['Change in Z (%)'] = 100 * (app_df_Z['Shocked Z'] - app_df_Z['Initial Z']) / app_df_Z['Initial Z']
+
+    shock_pq = extract_values(model, "pq")
+    app_df_pq['Shocked pq'] = pd.Series(shock_pq)
+    app_df_pq['Change in pq (%)'] = 100 * (app_df_pq['Shocked pq'] - app_df_pq['Initial pq']) / app_df_pq['Initial pq']
+
+    # Return the DataFrames for use in the app
+    return app_df_Z, app_df_pq
+
+
 
 return_period = 5
 affected_regions = ["V", "VI", "VIII", "X", "XIII"]
