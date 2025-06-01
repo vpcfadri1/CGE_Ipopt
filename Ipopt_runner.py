@@ -372,4 +372,4 @@ affected_regions = ["V", "VI", "VIII", "X", "XIII"]
                     # "XII", 
                     # "XIII", 
                     # "BARMM"] 
-runner(return_period, affected_regions)
+# runner(return_period, affected_regions)
